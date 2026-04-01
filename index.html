@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER-ARENA: Y-GENESIS</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        :root {
+            --neon-green: #00ffcc;
+            --dark-bg: #0a0a0c;
+            --panel-bg: #16161a;
+        }
+        body {
+            margin: 0; padding: 0; background-color: var(--dark-bg); color: white;
+            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+        }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; background: #000; border-bottom: 1px solid var(--neon-green);
+        }
+        .title { font-size: 20px; font-weight: bold; text-shadow: 0 0 10px var(--neon-green); }
+        
+        /* 3D Арена */
+        #arena-3d { width: 100%; height: 40vh; background: #000; position: relative; }
+        
+        /* Вкладки */
+        .tabs { display: flex; justify-content: space-around; background: var(--panel-bg); padding: 10px 0; }
+        .tab-btn { background: transparent; color: gray; border: none; font-size: 16px; font-weight: bold; text-transform: uppercase; }
+        .tab-btn.active { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+        
+        /* Контент */
+        .content { padding: 20px; height: 50vh; overflow-y: auto; }
+        .panel { display: none; text-align: center; }
+        .panel.active { display: block; }
+        
+        /* Элементы UI */
+        input { width: 90%; padding: 10px; margin: 10px 0; background: transparent; border: 1px solid var(--neon-green); color: white; }
+        .btn-action { background: var(--neon-green); color: black; border: none; padding: 12px 20px; font-weight: bold; width: 100%; text-transform: uppercase; cursor: pointer; }
+        .stats-box { border: 1px solid var(--neon-green); padding: 15px; margin-top: 15px; text-align: left; }
+        .stat-line { display: flex; justify-content: space-between; margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title">Y-GENESIS <span id="user-name"></span></div>
+        <div id="ton-connect"></div>
+    </header>
+
+    <div id="arena-3d"></div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('lab')">Лаборатория</button>
+        <button class="tab-btn" onclick="switchTab('arena')">PVP Арена</button>
+        <button class="tab-btn" onclick="switchTab('loot')">Лудка (TON)</button>
+    </div>
+
+    <div class="content">
+        <div id="lab" class="panel active">
+            <h3>Создать ИИ-Бойца</h3>
+            <p>Осталось генераций: <span id="gen-limit">3</span>/3</p>
+            <input type="text" id="ai-prompt" placeholder="Например: Самурай-Чад с аурой...">
+            <button class="btn-action" onclick="generateFighter()">Сгенерировать</button>
+            
+            <div id="fighter-stats" class="stats-box" style="display:none;">
+                <h4 style="text-align:center; margin-top:0;">СИСТЕМНЫЕ ДАННЫЕ</h4>
+                <div class="stat-line"><span>Класс:</span> <span id="s-class"></span></div>
+                <div class="stat-line"><span>Сила (Y):</span> <span id="s-power"></span></div>
+                <div class="stat-line"><span>Интеллект:</span> <span id="s-int"></span></div>
+                <button class="btn-action" style="margin-top:15px; background: transparent; color: var(--neon-green); border: 1px solid var(--neon-green);" onclick="mintNFT()">Mint NFT (2.5 TON)</button>
+            </div>
+        </div>
+
+        <div id="arena" class="panel">
+            <h3>Поиск противника...</h3>
+            <p style="color: gray;">Для доступа к PVP нужен сгенерированный боец.</p>
+            <button class="btn-action">Искать матч (Ставка 1 TON)</button>
+        </div>
+
+        <div id="loot" class="panel">
+            <h3>Черный Рынок</h3>
+            <div class="stats-box" style="text-align: center;">
+                <h4>Кейс "Абсолют"</h4>
+                <p>Шанс на Легу: 1.5%</p>
+                <button class="btn-action" onclick="openCase()">Открыть (0.5 TON)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        if(tg.initDataUnsafe?.user) {
+            document.getElementById('user-name').innerText = `| ${tg.initDataUnsafe.user.first_name}`;
+        }
+
+        // Инициализация TON Connect
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json', // Заглушка, потом сменишь на свой
+            buttonRootId: 'ton-connect'
+        });
+
+        // --- ЛОГИКА ВКЛАДОК ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- ИМИТАЦИЯ ИИ ГЕНЕРАЦИИ ---
+        let limits = 3;
+        function generateFighter() {
+            if (limits <= 0) {
+                tg.showAlert("Лимит исчерпан! Купите энергию за Звезды.");
+                return;
+            }
+            const prompt = document.getElementById('ai-prompt').value;
+            if (!prompt) { tg.showAlert("Введите промпт!"); return; }
+
+            limits--;
+            document.getElementById('gen-limit').innerText = limits;
+            
+            // Псевдо-генерация статов
+            document.getElementById('fighter-stats').style.display = 'block';
+            const classes = ["Кибер-Ниндзя", "Меха-Чад", "Y-Мутант", "Абсолют-Дрон"];
+            document.getElementById('s-class').innerText = classes[Math.floor(Math.random() * classes.length)];
+            document.getElementById('s-power').innerText = Math.floor(Math.random() * 50) + 50; // от 50 до 100
+            document.getElementById('s-int').innerText = Math.floor(Math.random() * 50) + 50;
+
+            // Меняем цвет 3D модели при генерации
+            cube.material.color.setHex(Math.random() * 0xffffff);
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // --- ЛОГИКА МИНТА И ДОНАТА ---
+        async function mintNFT() {
+            if (!tonConnectUI.connected) {
+                tg.showAlert("Сначала подключи кошелек TON!");
+                return;
+            }
+            tg.showAlert("Транзакция отправлена в кошелек... (Здесь будет смарт-контракт)");
+            // Здесь в будущем будет код отправки транзакции через tonConnectUI.sendTransaction(...)
+        }
+
+        function openCase() {
+            tg.HapticFeedback.impactOccurred('heavy');
+            tg.showAlert("Открытие кейса... (Имитация снятия 0.5 TON)");
+        }
+
+        // --- 3D ДВИЖОК (THREE.JS) ---
+        // Создаем сцену, камеру и рендерер
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.4), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        const container = document.getElementById('arena-3d');
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        // Создаем голограмму бойца (пока это вращающийся кристалл-октаэдр)
+        const geometry = new THREE.OctahedronGeometry(1.5, 0);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 4;
+
+        // Анимация вращения
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Адаптация 3D при перевороте экрана
+        window.addEventListener('resize', () => {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
