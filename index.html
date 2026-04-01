@@ -3,116 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Y-GENESIS: ABSOLUTE</title>
+    <title>Y-GENESIS: TOTAL ABSOLUTE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
-        :root { --neon: #00ffcc; --gold: #ffd700; --bg: #0d0d0f; --card: #1a1a1f; --red: #ff4757; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; -webkit-user-select: none; }
+        :root { --neon: #00ffcc; --gold: #ffd700; --bg: #050507; --card: rgba(255,255,255,0.03); --red: #ff3e3e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Courier New', monospace; overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #000; border-bottom: 2px solid var(--neon); }
-        .balance-box { background: #222; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--neon); font-family: monospace; font-weight: bold; color: var(--neon); }
+        /* ЗАСТАВКА (LOADING SCREEN) */
+        #loader { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .loading-bar { width: 80%; height: 4px; background: #222; margin: 20px 0; border-radius: 2px; position: relative; overflow: hidden; }
+        .progress { width: 0%; height: 100%; background: var(--neon); transition: 0.2s; box-shadow: 0 0 10px var(--neon); }
+        #intro-text { font-size: 14px; color: var(--neon); text-transform: uppercase; margin-bottom: 20px; min-height: 40px; }
+        .guide-box { background: rgba(0,255,204,0.05); border: 1px solid var(--neon); padding: 15px; border-radius: 10px; display: none; margin-top: 20px; }
 
-        /* HERO VIEW */
-        #hero-viewport { width: 100%; height: 35vh; background: linear-gradient(to bottom, #000, #1a1a1f); display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #333; }
-        #hero-img { max-height: 90%; max-width: 90%; border-radius: 15px; display: none; box-shadow: 0 0 30px rgba(0,255,204,0.2); border: 1px solid rgba(0,255,204,0.3); }
-        .loading-anim { color: var(--neon); font-family: monospace; font-size: 14px; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* TABS */
-        .tabs { display: flex; justify-content: space-around; background: #000; padding: 10px 0; position: sticky; top: 0; z-index: 100; }
-        .tab-btn { background: none; border: none; color: #555; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-        .tab-btn.active { color: var(--neon); text-shadow: 0 0 8px var(--neon); }
-
-        /* CONTENT */
-        .content { padding: 15px; height: 50vh; overflow-y: auto; padding-bottom: 80px; }
-        .panel { display: none; animation: fadeIn 0.3s; }
-        .panel.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* UI ELEMENTS */
-        .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; }
-        .btn { background: var(--neon); color: #000; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: 900; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
-        .btn:active { transform: scale(0.96); }
-        .btn-outline { background: none; border: 1px solid var(--neon); color: var(--neon); }
+        /* HEADER & UI */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(0,0,0,0.9); border-bottom: 1px solid var(--neon); }
+        .balance { background: #111; padding: 5px 15px; border-radius: 50px; border: 1px solid var(--neon); color: var(--neon); font-weight: bold; }
         
-        select { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 10px; margin-bottom: 10px; }
+        #main-view { height: 100vh; display: none; }
+        #viewport { width: 100%; height: 32vh; background: #000; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #222; }
+        #hero-img { height: 95%; border-radius: 15px; display: none; border: 1px solid var(--neon); box-shadow: 0 0 20px rgba(0,255,204,0.2); }
 
-        /* MINES GAME */
+        .tabs { display: flex; background: #000; border-bottom: 1px solid #222; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #444; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+        .tab-btn.active { color: var(--neon); border-bottom: 2px solid var(--neon); }
+
+        .content { padding: 15px; height: 50vh; overflow-y: auto; padding-bottom: 100px; }
+        .card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 12px; backdrop-filter: blur(5px); }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.2s; }
+        .btn-neon { background: var(--neon); color: #000; }
+        .btn-gold { background: var(--gold); color: #000; }
+        .btn:active { transform: scale(0.97); }
+
+        /* МИНЫ */
         .mines-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
-        .cell { background: #222; height: 60px; border-radius: 8px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .cell.safe { background: rgba(0, 255, 204, 0.2); border-color: var(--neon); }
-        .cell.bomb { background: rgba(255, 71, 87, 0.2); border-color: var(--red); }
+        .cell { background: #111; height: 50px; border-radius: 8px; border: 1px solid #222; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .cell.safe { background: rgba(0,255,204,0.1); border-color: var(--neon); }
+        .cell.bomb { background: rgba(255,62,62,0.1); border-color: var(--red); }
+
+        /* АНИМАЦИИ */
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+        .scan-line { position: absolute; width: 100%; height: 2px; background: rgba(0,255,204,0.3); animation: scan 3s linear infinite; }
     </style>
 </head>
 <body>
 
-<header>
-    <div style="font-weight:900; color:var(--neon)">Y-GENESIS</div>
-    <div class="balance-box">🔋 <span id="balance">1000</span> Y-CELLS</div>
-    <div id="ton-connect"></div>
-</header>
-
-<div id="hero-viewport">
-    <div id="status-txt" class="loading-anim">ОЖИДАНИЕ СИГНАЛА...</div>
-    <img id="hero-img" src="" alt="Hero">
+<div id="loader">
+    <div style="font-size: 24px; font-weight: 900; color: var(--neon); margin-bottom: 10px;">Y-GENESIS</div>
+    <div id="intro-text">ИНИЦИАЛИЗАЦИЯ ПРОТОКОЛА...</div>
+    <div class="loading-bar"><div id="progress" class="progress"></div></div>
+    
+    <div id="guide" class="guide-box">
+        <h4 style="margin:0 0 10px 0; color:var(--neon)">ИНСТРУКЦИЯ АБСОЛЮТА</h4>
+        <div style="font-size:12px; text-align:left; line-height:1.5">
+            1. 🧬 <b>ЛАБА:</b> Создавай бойцов за Y-клетки.<br>
+            2. 💣 <b>МИНЫ:</b> Умножай валюту, но вовремя забирай куш.<br>
+            3. 💎 <b>MINT:</b> Превращай лучших в NFT через TON.<br>
+            4. 📈 <b>СКЛАД:</b> Используй бусты для доминирования.
+        </div>
+        <button class="btn btn-neon" style="margin-top:20px;" onclick="startGame()">ВОЙТИ В СИСТЕМУ</button>
+    </div>
 </div>
 
-<div class="tabs">
-    <button class="tab-btn active" onclick="showTab('lab', this)">Лаба</button>
-    <button class="tab-btn" onclick="showTab('games', this)">Мины</button>
-    <button class="tab-btn" onclick="showTab('case', this)">Кейсы</button>
-    <button class="tab-btn" onclick="showTab('upgrade', this)">Апгрейд</button>
-</div>
+<div id="main-view">
+    <header>
+        <div class="balance">⚡ <span id="balance">1000</span> Y</div>
+        <div id="ton-connect"></div>
+    </header>
 
-<div class="content">
-    <div id="lab" class="panel active">
-        <div class="card">
-            <h4 style="margin-top:0">🧬 СОЗДАТЬ БОЙЦА</h4>
-            <select id="hero-type">
-                <option value="SAMURAI">КИБЕР-САМУРАЙ</option>
-                <option value="NINJA">ТЕХНО-НИНДЗЯ</option>
-                <option value="TANK">ТЯЖЕЛЫЙ ДРОН</option>
-            </select>
-            <button class="btn" onclick="createHero()">ГЕНЕРАЦИЯ (200 Y)</button>
-        </div>
-        <div id="hero-stats" class="card" style="display:none; border-left: 4px solid var(--neon);">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <span id="h-class" style="font-weight:bold; color:var(--neon)"></span>
-                <span id="h-rarity" style="font-size:12px; font-weight:bold"></span>
-            </div>
-            <div style="font-size:14px; opacity:0.8">
-                ⚡ МОЩЬ: <span id="h-power">0</span> | 🤸 ЛОВКОСТЬ: <span id="h-agil">0</span>
-            </div>
-            <button class="btn btn-outline" style="margin-top:10px; font-size:12px;" onclick="mintNFT()">MINT NFT (2.5 TON)</button>
-        </div>
+    <div id="viewport">
+        <div class="scan-line"></div>
+        <div id="view-status" style="color:#333; font-size:12px;">READY_FOR_DATA</div>
+        <img id="hero-img" src="" alt="Hero">
     </div>
 
-    <div id="games" class="panel">
-        <div class="card">
-            <h4 style="margin:0">💣 КРИПТО-МИНЫ</h4>
-            <p style="font-size:12px; color:#777">Найди сокровища, не взорвись!</p>
-            <div class="mines-grid" id="mines-board">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('gen', this)">Генезис</button>
+        <button class="tab-btn" onclick="showTab('mines', this)">Мины</button>
+        <button class="tab-btn" onclick="showTab('inv', this)">Инвентарь</button>
+    </div>
+
+    <div class="content">
+        <div id="gen" class="panel" style="display:block">
+            <div class="card">
+                <p style="font-size:11px; color:gray">ВЫБЕРИТЕ ПРОТОКОЛ СБОРКИ:</p>
+                <select id="h-type" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:white; border-radius:10px; margin-bottom:15px;">
+                    <option value="SAMURAI_PHONK">САМУРАЙ (ФОНК)</option>
+                    <option value="DRILL_BOT">ДРИЛЛ-БЕГЕМОТ</option>
+                    <option value="CYBER_GHOST">КИБЕР-ПРИЗРАК</option>
+                </select>
+                <button class="btn btn-neon" onclick="generateHero()">СОЗДАТЬ БОЙЦА (300 Y)</button>
+            </div>
+            <div id="hero-card" class="card" style="display:none; border-left: 5px solid var(--neon);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span id="res-rarity" style="font-weight:900"></span>
+                    <span id="res-class" style="color:var(--neon)"></span>
                 </div>
-            <button class="btn" id="start-mines" onclick="startMines()">СТАВКА 100 Y</button>
+                <div style="font-size:12px;">МОЩЬ: <span id="res-pwr">0</span> | СКОРОСТЬ: <span id="res-spd">0</span></div>
+                <button class="btn btn-gold" style="margin-top:10px; font-size:11px;" onclick="mintNFT()">MINT NFT (2.5 TON)</button>
+            </div>
         </div>
-    </div>
 
-    <div id="case" class="panel">
-        <div class="card" style="text-align:center; border: 1px solid var(--gold)">
-            <h3 style="color:var(--gold); margin:0">ЧАД-БОКС</h3>
-            <p style="font-size:12px">Шанс на АБСОЛЮТА 5%</p>
-            <div style="font-size:50px; margin:20px 0">📦</div>
-            <button class="btn" style="background:var(--gold)" onclick="openCase()">ОТКРЫТЬ (500 Y)</button>
+        <div id="mines" class="panel" style="display:none">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between">
+                    <span>МНОЖИТЕЛЬ: <b id="m-val" style="color:var(--gold)">x1.00</b></span>
+                    <span>КУШ: <b id="w-val">0</b> Y</span>
+                </div>
+                <div class="mines-grid" id="grid"></div>
+                <button id="m-start" class="btn btn-neon" onclick="startMines()">СТАВКА 100 Y</button>
+                <button id="m-cash" class="btn btn-gold" style="display:none" onclick="cashOut()">ЗАБРАТЬ ВЫИГРЫШ</button>
+            </div>
         </div>
-    </div>
 
-    <div id="upgrade" class="panel">
-        <div class="card">
-            <h4>📈 УЛУЧШИТЬ ПЕРСОНАЖА</h4>
-            <p style="font-size:12px">Повышает все статы на +10%</p>
-            <button class="btn" onclick="upgradeHero()">УЛУЧШИТЬ (300 Y)</button>
+        <div id="inv" class="panel" style="display:none">
+            <div class="card">
+                <h4>ВАШ СКЛАД</h4>
+                <div id="inv-items">
+                    <div style="color:gray; font-size:12px;">Пока пусто. Выбивай редких бойцов!</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -122,133 +134,127 @@
     tg.expand();
 
     let state = {
-        balance: 1000,
-        hasHero: false,
-        power: 0,
-        agil: 0,
-        rarity: 'ОБЫЧНЫЙ'
+        bal: 1000,
+        game: false,
+        pool: 0,
+        multi: 1.0,
+        board: []
     };
 
-    // TON Connect
-    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    const tonUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://hykyter.github.io/MVP/tonconnect-manifest.json',
         buttonRootId: 'ton-connect'
     });
 
-    function showTab(id, btn) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    // --- ЛОГИКА ЗАГРУЗКИ ---
+    let prg = 0;
+    const loaderInterval = setInterval(() => {
+        prg += Math.random() * 15;
+        if(prg >= 100) {
+            prg = 100;
+            clearInterval(loaderInterval);
+            document.getElementById('intro-text').innerText = "ДОСТУП РАЗРЕШЕН";
+            document.getElementById('guide').style.display = 'block';
+        }
+        document.getElementById('progress').style.width = prg + '%';
+    }, 200);
+
+    function startGame() {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('main-view').style.display = 'block';
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    function showTab(id, el) {
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        btn.classList.add('active');
-        tg.HapticFeedback.impactOccurred('light');
+        document.getElementById(id).style.display = 'block';
+        el.classList.add('active');
     }
 
-    function updateUI() {
-        document.getElementById('balance').innerText = state.balance;
-    }
-
-    // ЛОГИКА ГЕНЕРАЦИИ
-    const heroImgs = [
-        "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=400",
-        "https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=400",
-        "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=400"
-    ];
-
-    function createHero() {
-        if(state.balance < 200) return tg.showAlert("Недостаточно Y-клеток!");
-        
-        state.balance -= 200;
+    // --- ГЕНЕРАЦИЯ ---
+    function generateHero() {
+        if(state.bal < 300) return tg.showAlert("Мало валюты!");
+        state.bal -= 300;
         updateUI();
-        
-        document.getElementById('status-txt').innerText = "ГЕНЕРАЦИЯ ДНК...";
+
+        document.getElementById('view-status').innerText = "ВЫЧИСЛЕНИЕ...";
         document.getElementById('hero-img').style.display = 'none';
 
         setTimeout(() => {
-            state.hasHero = true;
-            state.power = Math.floor(Math.random() * 50) + 50;
-            state.agil = Math.floor(Math.random() * 50) + 50;
-            
             const luck = Math.random();
-            state.rarity = luck > 0.9 ? 'АБСОЛЮТ' : (luck > 0.7 ? 'ЭПИК' : 'ОБЫЧНЫЙ');
+            const rar = luck > 0.9 ? '💎 АБСОЛЮТ' : (luck > 0.7 ? '🔥 ЭПИК' : 'ОБЫЧНЫЙ');
+            const col = luck > 0.9 ? 'var(--gold)' : (luck > 0.7 ? '#bc13fe' : 'var(--neon)');
 
-            document.getElementById('status-txt').style.display = 'none';
-            const img = document.getElementById('hero-img');
-            img.src = heroImgs[Math.floor(Math.random()*heroImgs.length)];
-            img.style.display = 'block';
+            document.getElementById('hero-img').src = `https://picsum.photos/seed/${Math.random()}/400/500`;
+            document.getElementById('hero-img').style.display = 'block';
+            document.getElementById('hero-img').style.borderColor = col;
+            document.getElementById('view-status').style.display = 'none';
 
-            document.getElementById('hero-stats').style.display = 'block';
-            document.getElementById('h-class').innerText = document.getElementById('hero-type').value;
-            document.getElementById('h-rarity').innerText = state.rarity;
-            document.getElementById('h-power').innerText = state.power;
-            document.getElementById('h-agil').innerText = state.agil;
+            document.getElementById('hero-card').style.display = 'block';
+            document.getElementById('res-rarity').innerText = rar;
+            document.getElementById('res-rarity').style.color = col;
+            document.getElementById('res-class').innerText = document.getElementById('h-type').value;
+            document.getElementById('res-pwr').innerText = Math.floor(Math.random()*60+40);
+            document.getElementById('res-spd').innerText = Math.floor(Math.random()*60+40);
             
             tg.HapticFeedback.notificationOccurred('success');
         }, 1500);
     }
 
-    // МИНЫ
-    let mineBoard = [];
+    // --- МИНЫ ---
     function startMines() {
-        if(state.balance < 100) return tg.showAlert("Нужно 100 Y!");
-        state.balance -= 100;
+        if(state.bal < 100) return tg.showAlert("Нужно 100 Y!");
+        state.bal -= 100; state.game = true; state.multi = 1.0; state.pool = 100;
         updateUI();
 
-        const grid = document.getElementById('mines-board');
-        grid.innerHTML = '';
-        mineBoard = Array(16).fill(0).map(() => Math.random() > 0.3 ? '💎' : '💣');
+        document.getElementById('m-start').style.display = 'none';
+        document.getElementById('m-cash').style.display = 'block';
+        
+        const grid = document.getElementById('grid'); grid.innerHTML = '';
+        state.board = Array(16).fill(0).map(() => Math.random() > 0.25 ? '💎' : '💣');
 
         for(let i=0; i<16; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.innerText = '?';
-            cell.onclick = () => {
-                if(cell.innerText !== '?') return;
-                const res = mineBoard[i];
-                cell.innerText = res;
-                if(res === '💣') {
-                    cell.classList.add('bomb');
-                    tg.HapticFeedback.notificationOccurred('error');
-                    tg.showAlert("БУМ! Ты проиграл.");
-                    setTimeout(startMines, 1000);
+            const c = document.createElement('div'); c.className = 'cell'; c.innerText = '?';
+            c.onclick = () => {
+                if(!state.game || c.innerText !== '?') return;
+                c.innerText = state.board[i];
+                if(c.innerText === '💣') {
+                    c.classList.add('bomb'); state.game = false;
+                    tg.showAlert("ВЗРЫВ!");
+                    setTimeout(() => {
+                        document.getElementById('m-start').style.display = 'block';
+                        document.getElementById('m-cash').style.display = 'none';
+                    }, 1000);
                 } else {
-                    cell.classList.add('safe');
-                    state.balance += 30;
-                    updateUI();
-                    tg.HapticFeedback.impactOccurred('light');
+                    c.classList.add('safe'); state.multi += 0.4;
+                    state.pool = Math.floor(100 * state.multi);
+                    document.getElementById('m-val').innerText = `x${state.multi.toFixed(2)}`;
+                    document.getElementById('w-val').innerText = state.pool;
+                    tg.HapticFeedback.impactOccurred('medium');
                 }
             };
-            grid.appendChild(cell);
+            grid.appendChild(c);
         }
     }
 
-    function openCase() {
-        if(state.balance < 500) return tg.showAlert("Копи Y-клетки!");
-        state.balance -= 500;
+    function cashOut() {
+        state.bal += state.pool; state.game = false;
+        tg.showAlert(`ЗАБРАНО: ${state.pool} Y`);
         updateUI();
-        createHero(); // Кейс просто триггерит элитную генерацию
-        tg.showAlert("Кейс открыт! Смотри в Лабе.");
+        document.getElementById('m-start').style.display = 'block';
+        document.getElementById('m-cash').style.display = 'none';
+        document.getElementById('grid').innerHTML = '';
     }
 
-    function upgradeHero() {
-        if(!state.hasHero) return tg.showAlert("Сначала создай бойца!");
-        if(state.balance < 300) return tg.showAlert("Мало валюты!");
-        
-        state.balance -= 300;
-        state.power += 15;
-        state.agil += 15;
-        updateUI();
-        
-        document.getElementById('h-power').innerText = state.power;
-        document.getElementById('h-agil').innerText = state.agil;
-        tg.showAlert("УРОВЕНЬ ПОВЫШЕН!");
+    function updateUI() {
+        document.getElementById('balance').innerText = Math.floor(state.bal);
     }
 
     function mintNFT() {
-        if(!tonConnectUI.connected) return tg.showAlert("Подключи TON!");
-        tg.showAlert("Минт запущен... Проверь кошелек.");
+        if(!tonUI.connected) return tg.showAlert("Подключи кошелек!");
+        tg.showAlert("Запрос отправлен...");
     }
-
-    updateUI();
 </script>
 </body>
 </html>
