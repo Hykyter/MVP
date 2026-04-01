@@ -9,185 +9,150 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
-        :root {
-            --neon-green: #00ffcc;
-            --dark-bg: #0a0a0c;
-            --panel-bg: #16161a;
-        }
-        body {
-            margin: 0; padding: 0; background-color: var(--dark-bg); color: white;
-            font-family: 'Courier New', Courier, monospace; overflow: hidden;
-        }
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; background: #000; border-bottom: 1px solid var(--neon-green);
-        }
-        .title { font-size: 20px; font-weight: bold; text-shadow: 0 0 10px var(--neon-green); }
-        
-        /* 3D Арена */
-        #arena-3d { width: 100%; height: 40vh; background: #000; position: relative; }
-        
-        /* Вкладки */
-        .tabs { display: flex; justify-content: space-around; background: var(--panel-bg); padding: 10px 0; }
-        .tab-btn { background: transparent; color: gray; border: none; font-size: 16px; font-weight: bold; text-transform: uppercase; }
-        .tab-btn.active { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
-        
-        /* Контент */
-        .content { padding: 20px; height: 50vh; overflow-y: auto; }
-        .panel { display: none; text-align: center; }
-        .panel.active { display: block; }
-        
-        /* Элементы UI */
-        input { width: 90%; padding: 10px; margin: 10px 0; background: transparent; border: 1px solid var(--neon-green); color: white; }
-        .btn-action { background: var(--neon-green); color: black; border: none; padding: 12px 20px; font-weight: bold; width: 100%; text-transform: uppercase; cursor: pointer; }
-        .stats-box { border: 1px solid var(--neon-green); padding: 15px; margin-top: 15px; text-align: left; }
-        .stat-line { display: flex; justify-content: space-between; margin: 5px 0; }
+        :root { --neon: #00ffcc; --gold: #ffd700; --epic: #bc13fe; --bg: #0a0a0c; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; }
+        header { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--neon); background: #000; }
+        #arena-3d { width: 100%; height: 35vh; background: radial-gradient(circle, #1a1a2e 0%, #000 100%); }
+        .tabs { display: flex; justify-content: space-around; background: #16161a; padding: 10px 0; }
+        .tab-btn { background: none; border: none; color: #555; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        .tab-btn.active { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        .content { padding: 20px; height: 55vh; overflow-y: auto; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid var(--neon); color: #fff; border-radius: 5px; }
+        .btn-main { background: var(--neon); color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; border-radius: 5px; text-transform: uppercase; }
+        .stats-card { border: 1px solid var(--neon); padding: 15px; margin-top: 15px; text-align: left; background: #111; border-radius: 10px; }
+        .stat-row { display: flex; justify-content: space-between; margin: 5px 0; font-family: monospace; }
+        .rarity-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="title">Y-GENESIS <span id="user-name"></span></div>
+        <div style="font-weight:bold; color:var(--neon)">Y-GENESIS MVP</div>
         <div id="ton-connect"></div>
     </header>
 
     <div id="arena-3d"></div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('lab')">Лаборатория</button>
-        <button class="tab-btn" onclick="switchTab('arena')">PVP Арена</button>
-        <button class="tab-btn" onclick="switchTab('loot')">Лудка (TON)</button>
+        <button class="tab-btn active" onclick="switchTab('lab')">Лаба</button>
+        <button class="tab-btn" onclick="switchTab('arena')">PVP</button>
+        <button class="tab-btn" onclick="switchTab('loot')">Лудка</button>
     </div>
 
     <div class="content">
-        <div id="lab" class="panel active">
-            <h3>Создать ИИ-Бойца</h3>
-            <p>Осталось генераций: <span id="gen-limit">3</span>/3</p>
-            <input type="text" id="ai-prompt" placeholder="Например: Самурай-Чад с аурой...">
-            <button class="btn-action" onclick="generateFighter()">Сгенерировать</button>
-            
-            <div id="fighter-stats" class="stats-box" style="display:none;">
-                <h4 style="text-align:center; margin-top:0;">СИСТЕМНЫЕ ДАННЫЕ</h4>
-                <div class="stat-line"><span>Класс:</span> <span id="s-class"></span></div>
-                <div class="stat-line"><span>Сила (Y):</span> <span id="s-power"></span></div>
-                <div class="stat-line"><span>Интеллект:</span> <span id="s-int"></span></div>
-                <button class="btn-action" style="margin-top:15px; background: transparent; color: var(--neon-green); border: 1px solid var(--neon-green);" onclick="mintNFT()">Mint NFT (2.5 TON)</button>
+        <div id="lab" class="panel">
+            <p>Промпт для ИИ (Осталось: <span id="limit">3</span>)</p>
+            <input type="text" id="prompt" placeholder="Опиши своего бойца...">
+            <button class="btn-main" onclick="generateFighter()">Создать Абсолюта</button>
+
+            <div id="result" class="stats-card" style="display:none;">
+                <div id="rarity" class="rarity-tag"></div>
+                <div class="stat-row"><span>КЛАСС:</span> <span id="c-class" style="color:var(--neon)"></span></div>
+                <div class="stat-row"><span>МОЩЬ (Y):</span> <span id="c-power"></span></div>
+                <div class="stat-row"><span>ЛОВКОСТЬ:</span> <span id="c-agil"></span></div>
+                <div class="stat-row"><span>ИНТЕЛЛЕКТ:</span> <span id="c-int"></span></div>
+                <button class="btn-main" style="margin-top:15px; background:none; color:var(--gold); border:1px solid var(--gold)" onclick="mintNFT()">Mint NFT (2.5 TON)</button>
             </div>
         </div>
 
-        <div id="arena" class="panel">
-            <h3>Поиск противника...</h3>
-            <p style="color: gray;">Для доступа к PVP нужен сгенерированный боец.</p>
-            <button class="btn-action">Искать матч (Ставка 1 TON)</button>
+        <div id="arena" class="panel" style="display:none">
+            <h3>ПОИСК СОПЕРНИКА...</h3>
+            <p style="color:gray">Нужен NFT-боец для входа</p>
         </div>
 
-        <div id="loot" class="panel">
-            <h3>Черный Рынок</h3>
-            <div class="stats-box" style="text-align: center;">
-                <h4>Кейс "Абсолют"</h4>
-                <p>Шанс на Легу: 1.5%</p>
-                <button class="btn-action" onclick="openCase()">Открыть (0.5 TON)</button>
-            </div>
+        <div id="loot" class="panel" style="display:none">
+            <h3>КЕЙС "ЧАД-ГЕНЕЗИС"</h3>
+            <button class="btn-main" onclick="tg.showAlert('Оплата 0.5 TON...')">Открыть (0.5 TON)</button>
         </div>
     </div>
 
     <script>
-        // Инициализация Telegram
         const tg = window.Telegram.WebApp;
         tg.expand();
-        if(tg.initDataUnsafe?.user) {
-            document.getElementById('user-name').innerText = `| ${tg.initDataUnsafe.user.first_name}`;
-        }
 
-        // Инициализация TON Connect
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json', // Заглушка, потом сменишь на свой
+            manifestUrl: 'https://hykyter.github.io/MVP/tonconnect-manifest.json',
             buttonRootId: 'ton-connect'
         });
 
-        // --- ЛОГИКА ВКЛАДОК ---
-        function switchTab(tabId) {
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        function switchTab(id) {
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            document.getElementById(id).style.display = 'block';
             event.target.classList.add('active');
         }
 
-        // --- ИМИТАЦИЯ ИИ ГЕНЕРАЦИИ ---
         let limits = 3;
         function generateFighter() {
-            if (limits <= 0) {
-                tg.showAlert("Лимит исчерпан! Купите энергию за Звезды.");
-                return;
-            }
-            const prompt = document.getElementById('ai-prompt').value;
-            if (!prompt) { tg.showAlert("Введите промпт!"); return; }
+            const input = document.getElementById('prompt').value.toLowerCase();
+            const badWords = ["голая", "секс", "член", "пенис", "порно", "sex", "porn", "naked"];
+            
+            if (limits <= 0) return tg.showAlert("Лимиты всё! Жди завтра.");
+            if (badWords.some(word => input.includes(word))) return tg.showPopup({title: "ЦЕНЗУРА", message: "Удали пошлятину, Чад!", buttons: [{type: "close"}]});
+            if (!input) return tg.showAlert("Напиши хоть что-то!");
 
             limits--;
-            document.getElementById('gen-limit').innerText = limits;
-            
-            // Псевдо-генерация статов
-            document.getElementById('fighter-stats').style.display = 'block';
-            const classes = ["Кибер-Ниндзя", "Меха-Чад", "Y-Мутант", "Абсолют-Дрон"];
-            document.getElementById('s-class').innerText = classes[Math.floor(Math.random() * classes.length)];
-            document.getElementById('s-power').innerText = Math.floor(Math.random() * 50) + 50; // от 50 до 100
-            document.getElementById('s-int').innerText = Math.floor(Math.random() * 50) + 50;
+            document.getElementById('limit').innerText = limits;
 
-            // Меняем цвет 3D модели при генерации
-            cube.material.color.setHex(Math.random() * 0xffffff);
+            // Логика рандома
+            const luck = Math.random();
+            let rText = "ОБЫЧНЫЙ", rColor = "#00ffcc", mult = 1;
+
+            if (luck > 0.95) { rText = "💎 АБСОЛЮТ"; rColor = "#ffd700"; mult = 2.5; }
+            else if (luck > 0.75) { rText = "🔥 ЭПИК"; rColor = "#bc13fe"; mult = 1.6; }
+
+            const classes = ["Самурай", "Киборг", "Монах", "Стрелок", "Теневой Атлет"];
+            
+            document.getElementById('result').style.display = 'block';
+            const tag = document.getElementById('rarity');
+            tag.innerText = rText; tag.style.background = rColor;
+            
+            document.getElementById('c-class').innerText = classes[Math.floor(Math.random()*classes.length)];
+            document.getElementById('c-power').innerText = Math.floor((Math.random()*50+50)*mult);
+            document.getElementById('c-agil').innerText = Math.floor((Math.random()*40+40)*mult);
+            document.getElementById('c-int').innerText = Math.floor((Math.random()*30+30)*mult);
+
+            // Меняем цвет бойца под редкость
+            fighterMaterial.color.setHex(parseInt(rColor.replace('#','0x')));
             tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // --- ЛОГИКА МИНТА И ДОНАТА ---
         async function mintNFT() {
-            if (!tonConnectUI.connected) {
-                tg.showAlert("Сначала подключи кошелек TON!");
-                return;
-            }
-            tg.showAlert("Транзакция отправлена в кошелек... (Здесь будет смарт-контракт)");
-            // Здесь в будущем будет код отправки транзакции через tonConnectUI.sendTransaction(...)
+            if (!tonConnectUI.connected) return tg.showAlert("Подключи кошелек!");
+            tg.showAlert("Отправка транзакции на 2.5 TON...");
         }
 
-        function openCase() {
-            tg.HapticFeedback.impactOccurred('heavy');
-            tg.showAlert("Открытие кейса... (Имитация снятия 0.5 TON)");
-        }
-
-        // --- 3D ДВИЖОК (THREE.JS) ---
-        // Создаем сцену, камеру и рендерер
+        // 3D БОЕЦ (THREE.JS)
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.4), 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.35), 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        
         const container = document.getElementById('arena-3d');
         renderer.setSize(container.clientWidth, container.clientHeight);
         container.appendChild(renderer.domElement);
 
-        // Создаем голограмму бойца (пока это вращающийся кристалл-октаэдр)
-        const geometry = new THREE.OctahedronGeometry(1.5, 0);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        const fighterGroup = new THREE.Group();
+        const fighterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
 
-        camera.position.z = 4;
+        // Тело
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.4), fighterMaterial);
+        fighterGroup.add(body);
+        // Голова
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), fighterMaterial);
+        head.position.y = 0.9; fighterGroup.add(head);
+        // Руки
+        const armG = new THREE.BoxGeometry(0.2, 0.8, 0.2);
+        const lArm = new THREE.Mesh(armG, fighterMaterial); lArm.position.set(-0.6, 0.2, 0); fighterGroup.add(lArm);
+        const rArm = new THREE.Mesh(armG, fighterMaterial); rArm.position.set(0.6, 0.2, 0); fighterGroup.add(rArm);
 
-        // Анимация вращения
+        scene.add(fighterGroup);
+        camera.position.z = 3.5;
+
         function animate() {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+            fighterGroup.rotation.y += 0.02;
             renderer.render(scene, camera);
         }
         animate();
-
-        // Адаптация 3D при перевороте экрана
-        window.addEventListener('resize', () => {
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            renderer.setSize(width, height);
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-        });
     </script>
 </body>
 </html>
